@@ -1,9 +1,9 @@
 package edu.upc.dsa;
 
+import edu.upc.dsa.exceptions.IllegalArgumentException;
 import edu.upc.dsa.models.Lector;
 import edu.upc.dsa.models.Llibre;
 import edu.upc.dsa.models.Prestec;
-import edu.upc.dsa.models.Catalog;
 
 import edu.upc.dsa.exceptions.*;
 
@@ -16,21 +16,20 @@ public class LlibresManagerImpl implements LlibresManager {
     private static LlibresManager lm;
 
     private Map<String, Lector> lectors;
-    private Map<String, Catalog> catalog;//Llibres disponibles per a fer un prestec
-    private List<Stack<Llibre>> magatzem;
-    private List<Prestec> prestecs;
-    private Map<String, Llibre> llibresTotals;
+    private Map<String, Llibre> cataleg;
+    private Map<String, List<Prestec>> prestecsPerLector;
+
+    private Queue<Stack<Llibre>> magatzem;
 
     final static Logger logger = Logger.getLogger(LlibresManagerImpl.class);
 
     private LlibresManagerImpl() {
-        this.lectors = new HashMap<>();
-        this.catalog = new HashMap<>();
-        this.magatzem = new ArrayList<>();
-        this.prestecs = new ArrayList<>();
-        this.llibresTotals = new HashMap<>();
 
-        this.magatzem.add(new Stack<>());
+        this.lectors = new HashMap<>();
+        this.cataleg = new HashMap<>();
+        this.prestecsPerLector = new HashMap<>();
+        this.magatzem = new ArrayDeque<>();
+
     }
 
     public static LlibresManager getInstance() {
@@ -38,137 +37,161 @@ public class LlibresManagerImpl implements LlibresManager {
         return lm;
     }
 
-    public Lector afegirLector (String id, String name, String lastname, String dni, String dataNaixement, String llocNaixement, String adreca){
-        logger.info("afegir lector: " + id);
-        Lector l = new Lector(id, name, lastname, dni, dataNaixement, llocNaixement, adreca);
-
-            if(lectors.containsKey(id)){
-                Lector lector = lectors.get(id);
-                lector.setAdreca(adreca);
-                lector.setName(name);
-                lector.setLastname(lastname);
-                lector.setDni(dni);
-                lector.setDataNaixement(dataNaixement);
-                lector.setLlocNaixement(llocNaixement);
-                logger.info("lector actualitzat: " + id);
+    public Lector afegirLector (Lector l){
+        logger.info("afegir lector: " + l.getId());
+        if(l==null||l.getId()==null) {
+            logger.error("lector o id null");
+            throw new IllegalArgumentException("lector o id null");
+        }
+            if(lectors.containsKey(l.getId())) {
+                Lector lector = lectors.get(l.getId());
+                lector.setAdreca(l.getAdreca());
+                lector.setName(l.getName());
+                lector.setLastname(l.getLastname());
+                lector.setDni(l.getDni());
+                lector.setDataNaixement(l.getDataNaixement());
+                lector.setLlocNaixement(l.getLlocNaixement());
+                lector.setAdreca(l.getAdreca());
+                logger.info("lector actualitzat: " + l.getId());
                 return lector;
             }
             else{
-                lectors.put(id,l);
-                logger.info("lector creat: " + id);
+                lectors.put(l.getId(),l);
+                logger.info("lector creat: " + l.getId());
                 return l;
             }
     }
 
     public void emmagatzemarLlibre(Llibre llibre){
         logger.info("emmagatzemar llibre: " + llibre);
+
         if (llibre == null) {
             logger.error("llibre null");
+            throw new IllegalArgumentException("llibre null");
         }
 
-        llibresTotals.put(llibre.getId(), llibre);
-
-        Stack<Llibre> ultimStack = new Stack<>();
-        ultimStack = magatzem.get(magatzem.size()-1);
-        if(ultimStack.size() >= 10){
-            ultimStack = new Stack<>();
-            magatzem.add(ultimStack);//creem un nou stack a l'ultima posició de la llista magatzem
+        if (magatzem.isEmpty()||((ArrayDeque<Stack<Llibre>>) magatzem).getLast().size()>=10) {
+            magatzem.add(new Stack<>());
         }
+
+        Stack<Llibre> ultimStack = ((ArrayDeque<Stack<Llibre>>) magatzem).getLast();
         ultimStack.push(llibre);
-        logger.info("llibre apilat al munt = "+(magatzem.size()-1)+" amb un pila de tamany= "+ultimStack.size());
+        logger.info("llibre apilat amb un pila de tamany= "+ultimStack.size());
     }
 
-    public Catalog catalogarLlibre(){
-        while (!magatzem.isEmpty() && magatzem.get(0).isEmpty()) {
-            magatzem.remove(0);
+    public Llibre catalogarLlibre(){
+        logger.info("catalogar llibre");
+        while (!magatzem.isEmpty() && magatzem.peek().isEmpty()) {
+            magatzem.poll();
         }
         if (magatzem.isEmpty()) {
             logger.error("No hi han llibres al magatzem per catalogar");
             throw new NoBooksToCatalogException("No hay libros pendientes de catalogar");
         }
 
-        Stack<Llibre> primerStack = magatzem.get(0);
+        Stack<Llibre> primerStack = magatzem.peek();
         Llibre l = primerStack.pop();
         if (primerStack.isEmpty()){
-            magatzem.remove(0);
+            magatzem.poll();
         }
 
-        if(catalog.containsKey(l.getId())){
-            Catalog c = catalog.get(l.getId());
-            c.setEjemplaresTotales(c.getEjemplaresTotales()+1);
-            c.setEjemplaresDisponibles(c.getEjemplaresDisponibles()+1);
-            logger.info("catalog actualitzat: " + l.getId());
-            return c;
+        String isbn = l.getIsbn();
+        Llibre llibreAlCataleg = cataleg.get(isbn);
+
+        if(llibreAlCataleg==null){
+            l.setQuantitatDisponible(1);
+            cataleg.put(isbn,l);
+            logger.info("cataleg creat: " + l.getId());
+            return l;
         }
         else{
-            Catalog catalog = new Catalog(l.getId());
-            this.catalog.put(l.getId(), catalog);
-            logger.info("catalog creat: " + l.getId());
-            return catalog;
+            int q = llibreAlCataleg.getQuantitatDisponible();
+            llibreAlCataleg.setQuantitatDisponible(q+1);
+            logger.info("cataleg actualitzat: " + l.getId());
+            return llibreAlCataleg;
         }
+
     }
 
-    public Prestec prestarLlibre (String idPrestec, String idLector, String idLlibre, String dataPrestec, String dataDevolucio){
-        logger.info("prestar llibre: " + idLlibre);
+    public Prestec prestarLlibre (String idPrestec, String idLector, String idIsbn, String dataPrestec, String dataDevolucio){
+        logger.info("prestar llibre: " + idIsbn);
+
+        if(idPrestec == null || idLector == null || idIsbn == null){
+            logger.error("parametres null");
+            throw new IllegalArgumentException("id null");
+        }
+
         Lector lector = this.lectors.get(idLector);
         if (lector == null) {
             logger.error("lector no trobat");
             throw new LectorNoExisteix("lector no trobat");
         }
 
-        Catalog c = this.catalog.get(idLlibre);
-        if (c == null) {
-            logger.error("libro no catalogado");
-            throw new LlibreNoCatalogatException("libro no catalogado");
+        Llibre l = cataleg.get(idIsbn);
+        if (l == null) {
+            logger.error("llibre no catalogat");
+            throw new LlibreNoCatalogatException("llibre no catalogat");
         }
-        int disp = c.getEjemplaresDisponibles();
+        int disp = l.getQuantitatDisponible();
         if(disp <= 0){
-            logger.error("libro sin copias disponibles");
-            throw new CopiesNoDisponiblesException("libro sin copias disponibles");
+            logger.error("llibre sense copies disponibles");
+            throw new CopiesNoDisponiblesException("llibre sense copies disponibles");
         }
-        c.setEjemplaresDisponibles(disp-1);
+        l.setQuantitatDisponible(disp-1);
 
-        Prestec p = new Prestec(idPrestec, idLector, idLlibre, dataPrestec, dataDevolucio, "En tràmit");
-        prestecs.add(p);
-        logger.info("prestac creat: " + idLlibre);
+        Prestec p = new Prestec(idPrestec, idLector, idIsbn, dataPrestec, dataDevolucio, "En tràmit");
+        prestecsPerLector.computeIfAbsent(idLector, k -> new ArrayList<>()).add(p);
+        logger.info("prestec creat: " + idIsbn);
         return p;
     }
 
     public List<Prestec> prestecsLector(String idLector){
         logger.info("prestecs del lector: " + idLector);
         List<Prestec> l = new ArrayList<>();
-        for(Prestec p : prestecs){
-            if (p.getIdLector().equals(idLector)){
-                l.add(p);
-            }
-        }
+        l = prestecsPerLector.getOrDefault(idLector, Collections.emptyList());
         logger.info("llista de prestecs creada: " + l.size());
         return l;
     }
 
-    public Catalog getCatalog(String idLlibre){
-        if (idLlibre == null) return null;
-        return this.catalog.get(idLlibre);
-    }
+
 
     public Lector getLector (String id){
+        logger.info("getLector: " + id);
         return this.lectors.get(id);
+    }
+
+    public List getLectors(){
+        logger.info("get tots els lectors");
+        return new ArrayList<>(this.lectors.values());
+    }
+
+    public Llibre getLlibreCatalogat(String isbn) {
+        logger.info("get llibre catalogat: " + isbn);
+        return cataleg.get(isbn);
+    }
+
+    public List getLlibresCatalogats(){
+        logger.info("get tots llibres catalogats");
+        return new ArrayList<>(cataleg.values());
+    }
+
+
+    public Map<Integer, Integer> getMidaDeCadaStack() {
+        logger.info("llista de els stacks de llibres amb la seva mida");
+        Map<Integer, Integer> result = new LinkedHashMap<>();
+        int i = 1;
+        for (Stack<Llibre> munt : magatzem) {
+            result.put(i++, munt.size());
+        }
+        return result;
     }
 
 
     public void clear() {
-        logger.info("clear IN");
-        synchronized (lectors) { lectors.clear(); }
-        synchronized (catalog) {
-            catalog.clear();
-            llibresTotals.clear();
-        }
-        synchronized (magatzem) {
-            magatzem.clear();
-            magatzem.add(new Stack<>());
-        }
-        synchronized (prestecs) { prestecs.clear(); }
-        logger.info("clear OUT");
+        lectors.clear();
+        cataleg.clear();
+        prestecsPerLector.clear();
+        magatzem.clear();
     }
 
 }

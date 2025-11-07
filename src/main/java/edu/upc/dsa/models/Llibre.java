@@ -10,6 +10,7 @@ public class Llibre {
     String numEdicio;
     String autor;
     String tematica;
+    int quantitatDisponible;
 
     public Llibre() {
 
@@ -58,6 +59,10 @@ public class Llibre {
         return tematica;
     }
 
+    public int getQuantitatDisponible() {
+        return quantitatDisponible;
+    }
+
     public void setId(String id) {
         this.id = id;
     }
@@ -88,5 +93,10 @@ public class Llibre {
 
     public void setTematica(String tematica) {
         this.tematica = tematica;
+    }
+
+    public void setQuantitatDisponible(int quantitatDisponible) {
+        this.quantitatDisponible = quantitatDisponible;
+
     }
 }
