@@ -3,7 +3,6 @@ package edu.upc.dsa;
 import edu.upc.dsa.exceptions.*;
 import edu.upc.dsa.models.Catalog;
 import edu.upc.dsa.models.Llibre;
-import edu.upc.dsa.models.Lector;
 import edu.upc.dsa.models.Prestec;
 import org.junit.*;
 
