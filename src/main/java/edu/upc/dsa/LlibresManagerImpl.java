@@ -1,14 +1,13 @@
 package edu.upc.dsa;
 
 import edu.upc.dsa.exceptions.TrackNotFoundException;
-import edu.upc.dsa.models.Track;
 
 import java.util.LinkedList;
 import java.util.List;
 import org.apache.log4j.Logger;
 
-public class TracksManagerImpl implements TracksManager {
-    private static TracksManager instance;
+public class TracksManagerImpl implements LlibresManager {
+    private static LlibresManager instance;
     protected List<Track> tracks;
     final static Logger logger = Logger.getLogger(TracksManagerImpl.class);
 
@@ -16,7 +15,7 @@ public class TracksManagerImpl implements TracksManager {
         this.tracks = new LinkedList<>();
     }
 
-    public static TracksManager getInstance() {
+    public static LlibresManager getInstance() {
         if (instance==null) instance = new TracksManagerImpl();
         return instance;
     }
