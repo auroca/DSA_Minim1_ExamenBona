@@ -18,7 +18,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.apache.log4j.Logger;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Api(value = "/Biblioteca", description = "Servei de gestió de llibres, lectors i préstecs")
 @Path("/Biblioteca")
@@ -114,7 +116,7 @@ public class LlibresService {
 
     @POST
     @Path("/prestec")
-    @ApiOperation(value = "Crea un préstec i decrementa la disponibilitat")
+    @ApiOperation(value = "Crear un préstec i decrementar la disponibilitat")
     @ApiResponses({
             @ApiResponse(code = 201, message = "Creat", response = Prestec.class),
             @ApiResponse(code = 404, message = "Lector o llibre inexistent"),
@@ -138,7 +140,7 @@ public class LlibresService {
 
     @GET
     @Path("/lectors/{id}/prestecs")
-    @ApiOperation(value = "Llista tots els préstecs d’un lector", response = Prestec.class, responseContainer = "List")
+    @ApiOperation(value = "Llistar tots els préstecs d’un lector", response = Prestec.class, responseContainer = "List")
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK")
     })
@@ -150,7 +152,7 @@ public class LlibresService {
 
     @GET
     @Path("/lectors")
-    @ApiOperation(value = "Llista tots els lectors", response = Lector.class, responseContainer = "List")
+    @ApiOperation(value = "Llistar tots els lectors", response = Lector.class, responseContainer = "List")
     public Response getLectors() {
         List<Lector> l = manager.getLectors();
         GenericEntity<List<Lector>> entity = new GenericEntity<List<Lector>>(l) {};
@@ -159,7 +161,7 @@ public class LlibresService {
 
     @GET
     @Path("/cataleg")
-    @ApiOperation(value = "Llista tots els llibres catalogats", response = Llibre.class, responseContainer = "List")
+    @ApiOperation(value = "Llistar tots els llibres catalogats", response = Llibre.class, responseContainer = "List")
     public Response getCataleg() {
         List<Llibre> l = manager.getLlibresCatalogats();
         GenericEntity<List<Llibre>> entity = new GenericEntity<List<Llibre>>(l) {};
@@ -167,5 +169,6 @@ public class LlibresService {
     }
 
 
-
 }
+
+
