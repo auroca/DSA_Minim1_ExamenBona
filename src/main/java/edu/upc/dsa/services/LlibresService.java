@@ -80,6 +80,17 @@ public class LlibresService {
         }
     }
 
+    public static class LlibreIn {
+        public String id;
+        public String isbn;
+        public String titol;
+        public String editorial;
+        public String anyPublicacio;
+        public String numEdicio;
+        public String autor;
+        public String tematica;
+    }
+
 
     @POST
     @ApiOperation(value = "Apilar un llibre al magatzem")
@@ -89,11 +100,14 @@ public class LlibresService {
     })
     @Path("/magatzem/llibre")
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response emmagatzemar(Llibre llibre) {
-            if (llibre==null) {
+    public Response emmagatzemar(LlibreIn llibre) {
+            if (llibre == null || llibre.id == null || llibre.isbn == null || llibre.titol == null
+                    || llibre.editorial == null || llibre.anyPublicacio == null
+                    || llibre.numEdicio == null || llibre.autor == null || llibre.tematica == null) {
                 return Response.status(400).entity("llibre null").build();
             }
-            manager.emmagatzemarLlibre(llibre);
+            Llibre l = new Llibre(llibre.id, llibre.isbn, llibre.titol, llibre.editorial, llibre.anyPublicacio, llibre.numEdicio, llibre.autor, llibre.tematica);
+            manager.emmagatzemarLlibre(l);
             return Response.status(201).build();
     }
 
